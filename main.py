@@ -2,8 +2,8 @@ import badge
 
 class App(badge.BaseApp):
     def __init__(self):
-        self.bpm = 0.2
         self.frequencies = {
+            " ": 0,
             "C": 262, 
             "C#": 277, 
             "D": 294, 
@@ -15,15 +15,75 @@ class App(badge.BaseApp):
             "G#": 415, 
             "A": 440, 
             "A#": 466, 
-            "B": 494
+            "B": 494, 
+            "C5": 523,
+            "C5#": 554,
+            "D5": 587,
+            "D5#": 622,
+            "E5": 659,
+            "F5": 698,
+            "F5#": 740,
+            "G5": 784,
+            "G5#": 831,
+            "A5": 880,
+            "A5#": 932,
+            "B5": 988
         }
-        self.rickroll = ["G#", "F#", "F", "D#", "C#", "C#", "C#", "C#", "C#", "C#", "D#", "D#", "D#", "D#", "D#", "D#", "G#", "G#", "G#", "G#", "D#", "D#", "D#", "D#", "D#", "D#", "F", "F", "F", "F", "F"]
+        self.rickroll = [("G#", 0.2), ("F#", 0.2), ("F", 0.2), ("D#", 0.2), ("C#", 0.2), ("C#", 0.2), ("C#", 0.2), ("C#", 0.2), ("C#", 0.2), ("D#", 0.2), ("D#", 0.2), ("D#", 0.2), ("D#", 0.2), ("D#", 0.2), ("D#", 0.2), ("G#", 0.2), ("G#", 0.2), ("G#", 0.2), ("G#", 0.2), ("D#", 0.2), ("D#", 0.2), ("D#", 0.2), ("D#", 0.2), ("D#", 0.2), ("D#", 0.2), ("F", 0.2), ("F", 0.2), ("F", 0.2), ("F", 0.2), ("F", 0.2), ("G#", 0.2), ("F#", 0.2), ("F", 0.2), ("D#", 0.2), ("C#", 0.2), ("C#", 0.2), ("C#", 0.2), ("C#", 0.2), ("C#", 0.2), ("D#", 0.2), ("D#", 0.2), ("D#", 0.2), ("D#", 0.2), ("D#", 0.2), ("D#", 0.2), ("G#", 0.2), ("G#", 0.2), ("G#", 0.2), ("G#", 0.2), ("D#", 0.2), ("D#", 0.2), ("D#", 0.2), ("D#", 0.2), ("D#", 0.2), ("D#", 0.2), ("F", 0.2), ("F", 0.2), ("F", 0.2), ("F", 0.2), ("F", 0.2)]
+        self.carelesswhisper = [("E5", 0.5), ("D5", 0.3), ("A", 0.5), ("F", 0.5), ("E5", 0.8), ("D5", 0.3), ("A", 0.5), ("F", 0.8), ("A", 0.3), ("C5", 0.5), ("A#", 0.3), ("F", 0.5), ("D", 0.5), ("C5", 0.8), ("A#", 0.3), ("F", 0.3), ("C", 0.8)]
+        self.musics = [("Never Gonna Give You Up", self.rickroll), ("Careless Whisper", self.carelesswhisper)]
+
+
+
+        self.menuSize = len(self.musics)
+        self.menuEntry = 0
+        self.oldEntry = -1
+
+        self.playing = False
+
+    def render(self):
+        badge.display.rect(0, 32 + 18*(1+self.oldEntry), 200, 18, 1)
+        badge.display.rect(0, 32 + 18*(1+self.menuEntry), 200, 18, 0)
+        badge.display.show()
+
+    def pause(self):
+        badge.buzzer.no_tone()
+
+    def play(self):
+        self.pause()
+        for item in self.musics[self.menuEntry][1]:
+            badge.buzzer.tone(self.frequencies[item[0]], item[1])
+            if badge.input.get_button(badge.input.Buttons.SW13):
+                self.pause
+                self.playing = False
+                return
+        self.playing = False
 
     def on_open(self):
         badge.display.fill(1)
         badge.display.nice_text("Music Player", 0, 0, 32)
-        badge.display.show()
+        for music in self.musics:
+            badge.display.nice_text(music[0], 0, 32 + 18*(1+self.musics.index(music)))
 
     def loop(self):
-        for note in self.rickroll:
-            badge.buzzer.tone(self.frequencies[note], self.bpm)
+        if badge.input.get_button(badge.input.Buttons.SW7):
+            if self.menuEntry == 0:
+                self.menuEntry = self.menuSize - 1
+            else:
+                self.menuEntry -= 1
+        if badge.input.get_button(badge.input.Buttons.SW6):
+            if self.menuEntry == self.menuSize - 1:
+                self.menuEntry = 0
+            else:
+                self.menuEntry += 1
+        if badge.input.get_button(badge.input.Buttons.SW13):
+            if self.playing:
+                self.pause()
+                self.playing = False
+            else:
+                self.play()
+                self.playing = True
+
+        if self.oldEntry != self.menuEntry:
+            self.render()
+        self.oldEntry = self.menuEntry
